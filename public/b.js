@@ -1,27 +1,33 @@
-// Film arama veya direkt link açma fonksiyonu
+// Arama yapma veya Link Açma
 async function filmAraVeyaAc() {
   const input = document.getElementById('searchInput').value.trim();
   if (!input) return;
 
-  // Eğer yapıştırılan şey bir site linkiyse (https://...)
+  const resultsDiv = document.getElementById('searchResults');
+  resultsDiv.innerHTML = '<p>Aranıyor...</p>';
+
+  // Eğer doğrudan bir link girilmişse
   if (input.startsWith('http://') || input.startsWith('https://')) {
     sitedeFilmAc(input);
-    // Karşı tarafa da aynı linki açması için WebSocket mesajı at
-    if (window.ws && ws.readyState === 1) {
-      ws.send(JSON.stringify({ t: 'open-url', url: input }));
-    }
+    resultsDiv.innerHTML = '';
   } else {
-    // Kelime yazıldıysa Google araması yap
-    const res = await fetch(`/api/google-search?q=${encodeURIComponent(input)}`);
-    const data = await res.json();
-    
-    if (data.status === 'success') {
-      listeAramaSonuclari(data.data);
+    // Kelime girildiyse Google Search API çağır
+    try {
+      const res = await fetch(`/api/google-search?q=${encodeURIComponent(input)}`);
+      const data = await res.json();
+
+      if (data.status === 'success' && data.data.length > 0) {
+        listeAramaSonuclari(data.data);
+      } else {
+        resultsDiv.innerHTML = '<p>Sonuç bulunamadı veya bir hata oluştu.</p>';
+      }
+    } catch (err) {
+      resultsDiv.innerHTML = '<p>Arama sırasında bir bağlantı hatası oluştu.</p>';
     }
   }
 }
 
-// Arama sonuçlarını ekrana dökme
+// Google Sonuçlarını Listeleme
 function listeAramaSonuclari(sonuclar) {
   const container = document.getElementById('searchResults');
   container.innerHTML = '';
@@ -29,31 +35,29 @@ function listeAramaSonuclari(sonuclar) {
   sonuclar.forEach(item => {
     const div = document.createElement('div');
     div.className = 'result-item';
-    div.innerHTML = `<strong>${item.title}</strong><br><small>${item.snippet}</small>`;
+    div.innerHTML = `<strong>${item.title}</strong><br><small>${item.snippet}</small><br><i style="color:#aaa;">${item.displayLink}</i>`;
     div.onclick = () => {
       sitedeFilmAc(item.link);
-      if (window.ws && ws.readyState === 1) {
-        ws.send(JSON.stringify({ t: 'open-url', url: item.link }));
-      }
     };
     container.appendChild(div);
   });
 }
 
-// Seçilen linki ekran kutusuna (iframe) yükleme
+// Iframe veya Player'a Yükleme
 function sitedeFilmAc(url) {
   const iframe = document.getElementById('playerFrame');
-  // Proxy üzerinden yüklüyoruz ki site engeline takılmasın
-  iframe.src = `/api/proxy?url=${encodeURIComponent(url)}`;
-}
-
-// WebSocket dinleyicisi (Karşı taraf bir link açtığında sende de açılması için)
-// Var olan WebSocket kodunun mesaj dinleme kısmına ekle:
-if (window.ws) {
-  ws.addEventListener('message', (event) => {
-    const msg = JSON.parse(event.data);
-    if (msg.t === 'open-url') {
-      sitedeFilmAc(msg.url);
+  
+  // YouTube linki ise doğrudan embed olarak yükle
+  if (url.includes('youtube.com') || url.includes('youtu.be')) {
+    let videoId = '';
+    if (url.includes('youtu.be/')) {
+      videoId = url.split('youtu.be/')[1].split('?')[0];
+    } else if (url.includes('v=')) {
+      videoId = url.split('v=')[1].split('&')[0];
     }
-  });
+    iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+  } else {
+    // Normal web sitesi ise engelleri aşmak için proxy ile yükle
+    iframe.src = `/api/proxy?url=${encodeURIComponent(url)}`;
+  }
 }

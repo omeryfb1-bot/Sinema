@@ -8,29 +8,19 @@ const app = express();
 app.use(express.static('public'));
 app.use(express.json());
 
-// Health Check Endpoint
 app.get('/health', (_, res) => res.send('ok'));
 
-// Google Search API Endpoint
+// Google Arama Endpoint'i
 app.get('/api/google-search', async (req, res) => {
   try {
     const searchQuery = req.query.q;
-
-    if (!searchQuery) {
-      return res.status(400).json({
-        status: "error",
-        message: "Arama parametresi (q) eksik."
-      });
-    }
+    if (!searchQuery) return res.status(400).json({ status: "error", message: "Arama terimi eksik." });
 
     const API_KEY = process.env.GOOGLE_SEARCH_API_KEY;
     const CX_KEY = process.env.GOOGLE_SEARCH_CX;
 
     if (!API_KEY || !CX_KEY) {
-      return res.status(500).json({
-        status: "error",
-        message: "Sunucu tarafında Google API anahtarları tanımlanmamış."
-      });
+      return res.status(500).json({ status: "error", message: "API anahtarları eksik." });
     }
 
     const googleUrl = `https://www.googleapis.com/customsearch/v1?key=${API_KEY}&cx=${CX_KEY}&q=${encodeURIComponent(searchQuery)}`;
@@ -43,27 +33,34 @@ app.get('/api/google-search', async (req, res) => {
       displayLink: item.displayLink
     }));
 
-    return res.status(200).json({
-      status: "success",
-      query: searchQuery,
-      totalResults: response.data.searchInformation?.totalResults || "0",
-      data: searchResults
-    });
-
+    return res.json({ status: "success", query: searchQuery, data: searchResults });
   } catch (error) {
-    console.error("Google Search API Hatası:", error.response?.data || error.message);
-    return res.status(500).json({
-      status: "error",
-      message: "Google araması gerçekleştirilirken bir hata oluştu.",
-      error_detail: error.response?.data?.error?.message || error.message
-    });
+    return res.status(500).json({ status: "error", message: error.message });
   }
 });
 
-// HTTP Sunucusu & WebSocket Kurulumu
+// Film Sitelerinin Iframe Engellerini Aşmak İçin Proxy
+app.get('/api/proxy', async (req, res) => {
+  try {
+    const targetUrl = req.query.url;
+    if (!targetUrl) return res.status(400).send('URL eksik.');
+
+    const response = await axios.get(targetUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }
+    });
+
+    res.removeHeader('X-Frame-Options');
+    res.removeHeader('Content-Security-Policy');
+    res.send(response.data);
+  } catch (error) {
+    res.status(500).send('Sayfa yüklenemedi.');
+  }
+});
+
+// WebSocket Kurulumu (Ortak İzleme ve Bağlantı İçin)
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
-const rooms = new Map(); // oda kodu -> Set(ws)
+const rooms = new Map();
 
 function relay(ws, msg) {
   const r = rooms.get(ws.room);
@@ -94,13 +91,8 @@ wss.on('connection', (ws) => {
     }
 
     if (!ws.room) return;
-
-    // Google Arama veya Web Sayfası Senkronizasyonu Tipi
-    // m.t === 'google-search' (Birisi arama yaptığında arama terimini iletir)
-    // m.t === 'open-web' (Birisi çıkan sonuçtan bir siteye tıkladığında web linkini iletir)
-
     m.from = ws.name;
-    relay(ws, m);
+    relay(ws, m); // Karşı tarafa mesajı/linki iletir
   });
 
   ws.on('close', () => {

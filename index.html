@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Sinema">
+<meta name="theme-color" content="#2a0a10">
+<title>Sinema Odası</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--velvet:#2a0a10;--curtain:#5c1520;--brass:#d9b36c;--ivory:#f4ead6;--ink:#150507;--screen:#0c0c0c;
+--head:'Bebas Neue',Impact,sans-serif;--body:'DM Sans',system-ui,sans-serif}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{background:var(--ink);color:var(--ivory);font:15px/1.4 var(--body);padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);overflow-x:hidden}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer;border:1px solid var(--brass);background:transparent;padding:10px 16px;border-radius:6px}
+button.main{background:var(--brass);color:var(--ink);font-weight:700}
+button:focus-visible,input:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+input{background:#1d0a0e;border:1px solid #4a2a30;border-radius:6px;padding:11px 12px;width:100%}
+h1{font:400 clamp(44px,12vw,88px)/.95 var(--head);letter-spacing:.02em}
+.hidden{display:none!important}
+/* lobi */
+#lobby{min-height:100%;display:grid;place-items:center;padding:24px;background:
+ radial-gradient(ellipse at 50% -10%,var(--curtain),var(--velvet) 55%,var(--ink))}
+.ticket{width:min(420px,100%);background:var(--ivory);color:var(--ink);border-radius:10px;padding:26px 24px;position:relative;
+ -webkit-mask:radial-gradient(circle 12px at 0 62%,#0000 98%,#000) left/51% 100% no-repeat,radial-gradient(circle 12px at 100% 62%,#0000 98%,#000) right/51% 100% no-repeat;
+ mask:radial-gradient(circle 12px at 0 62%,#0000 98%,#000) left/51% 100% no-repeat,radial-gradient(circle 12px at 100% 62%,#0000 98%,#000) right/51% 100% no-repeat}
+.ticket h1{color:var(--curtain);margin-bottom:6px}
+.ticket p{margin-bottom:18px;color:#5b4a46}
+.ticket .row{display:flex;gap:10px;margin-top:12px}
+.ticket input{background:#fff;border-color:#c9b99a;color:var(--ink);text-transform:uppercase;letter-spacing:.2em;text-align:center;font-weight:700}
+.ticket input#name{text-transform:none;letter-spacing:0;font-weight:400;text-align:left}
+.ticket button{border-color:var(--curtain);color:var(--curtain)}
+.ticket button.main{background:var(--curtain);color:var(--ivory)}
+.err{color:#a3162a;min-height:20px;margin-top:10px;font-size:14px}
+/* salon */
+#room{display:grid;height:100%;grid-template-rows:auto 1fr;background:var(--velvet)}
+header{display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--curtain);border-bottom:2px solid var(--brass)}
+header .code{font:400 26px var(--head);letter-spacing:.14em;color:var(--brass)}
+header .who{font-size:13px;opacity:.8;margin-left:auto}
+.dot{width:9px;height:9px;border-radius:50%;background:#777;display:inline-block;margin-right:6px}
+.dot.on{background:#5fd07a}
+main{display:grid;grid-template-columns:1fr 340px;min-height:0}
+.stage{display:flex;flex-direction:column;min-height:0;padding:12px;gap:10px}
+.screen{position:relative;flex:1;min-height:200px;background:var(--screen);border:3px solid #000;box-shadow:0 0 0 2px var(--brass),0 10px 50px #000;border-radius:4px;overflow:hidden}
+#player,#player iframe{position:absolute;inset:0;width:100%;height:100%}
+.empty{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:20px;color:#b9a98a}
+#count{position:absolute;inset:0;display:grid;place-items:center;background:#000c;font:400 min(40vw,220px)/1 var(--head);color:var(--brass);z-index:5}
+.bar{display:flex;gap:8px}
+.bar input{flex:1}
+.tools{display:flex;gap:8px;flex-wrap:wrap}
+.tools button{padding:8px 12px;font-size:14px}
+button.live{background:#a3162a;border-color:#a3162a}
+aside{display:flex;flex-direction:column;min-height:0;border-left:1px solid #4a2a30;background:#1b070c}
+#log{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:7px}
+.msg{max-width:88%;padding:7px 11px;border-radius:12px;background:#3a141c;word-wrap:break-word}
+.msg.me{align-self:flex-end;background:var(--brass);color:var(--ink)}
+.msg.sys{align-self:center;background:none;color:#b9a98a;font-size:13px;text-align:center}
+.send{display:flex;gap:8px;padding:10px;border-top:1px solid #4a2a30}
+details{padding:0 12px 10px;font-size:13px;color:#cdbb97}
+details summary{cursor:pointer;padding:8px 0}
+details code{display:block;word-break:break-all;background:#000;padding:8px;border-radius:6px;margin:6px 0;font-size:11px;user-select:all}
+@media(max-width:820px){main{grid-template-columns:1fr;grid-template-rows:auto 1fr}aside{border-left:0;border-top:1px solid #4a2a30;min-height:0}.screen{min-height:0;aspect-ratio:16/9;flex:none}}
+@media(max-width:820px) and (orientation:landscape){main{grid-template-columns:1fr 260px;grid-template-rows:1fr}.screen{aspect-ratio:auto;flex:1}}
+@media(prefers-reduced-motion:no-preference){#count span{animation:pop .9s ease-out}@keyframes pop{from{transform:scale(1.6);opacity:0}to{transform:scale(1);opacity:1}}}
+</style>
+</head>
+<body>
+
+<section id="lobby">
+  <div class="ticket">
+    <h1>Sinema Odası</h1>
+    <p>İkimize özel salon. Bir kod seç, eşinle aynı koda gir.</p>
+    <input id="name" placeholder="Adın" maxlength="20" autocomplete="off">
+    <div class="row"><input id="code" placeholder="ODA KODU" maxlength="8" autocomplete="off"></div>
+    <div class="row">
+      <button class="main" id="join" style="flex:1">Salona gir</button>
+      <button id="gen">Yeni kod</button>
+    </div>
+    <div class="err" id="err"></div>
+  </div>
+</section>
+
+<section id="room" class="hidden">
+  <header>
+    <span class="code" id="rc"></span>
+    <span class="who"><span class="dot" id="dot"></span><span id="peer">Eşin bekleniyor</span></span>
+  </header>
+  <main>
+    <div class="stage">
+      <div class="screen">
+        <div id="player"></div>
+        <div class="empty" id="empty">Perde boş. Aşağıya bir YouTube linki yapıştır.</div>
+        <div id="count" class="hidden"><span id="cn"></span></div>
+      </div>
+      <div class="bar">
+        <input id="url" placeholder="YouTube linki" inputmode="url" autocomplete="off">
+        <button class="main" id="load">Aç</button>
+      </div>
+      <div class="tools">
+        <button id="mic">Mikrofonu aç</button>
+        <button id="cd">3-2-1 başlat</button>
+        <button id="halt">Durdurdum</button>
+        <button id="mins">Dakikam</button>
+      </div>
+      <details>
+        <summary>Başka bir film sitesinden izleyeceksek</summary>
+        <p><b>1.</b> Herkes filmi kendi ekranında açar. Senkron elle olur: "3-2-1 başlat", "Durdurdum" ve "Dakikam" düğmeleri bunun için.</p>
+        <p><b>2. Deneysel otomatik senkron:</b> Safari'de herhangi bir sayfayı yer imi yapıp, yer iminin adresini aşağıdaki satırla değiştirin. Film sitesini açınca bu yer imine dokunun. Video başka siteden gömülüyse çalışmayabilir.</p>
+        <code id="bm"></code>
+        <button id="cpbm" style="padding:6px 10px">Satırı kopyala</button>
+      </details>
+    </div>
+    <aside>
+      <div id="log"></div>
+      <div class="send">
+        <input id="msg" placeholder="Mesaj yaz" autocomplete="off">
+        <button class="main" id="sendb">Gönder</button>
+      </div>
+    </aside>
+  </main>
+</section>
+<audio id="remote" autoplay playsinline></audio>
+
+<script src="https://www.youtube.com/iframe_api"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+let ws, me = '', room = '', polite = false;
+let yt = null, ytReady = false, pending = null, vid = '', lock = 0, lastT = 0;
+
+/* ---------- lobi ---------- */
+const alpha = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+$('gen').onclick = () => { $('code').value = Array.from({length:5}, () => alpha[Math.floor(Math.random()*alpha.length)]).join(''); };
+$('name').value = localStorage.getItem('sn') || '';
+$('join').onclick = () => {
+  me = $('name').value.trim() || 'Ben';
+  room = $('code').value.trim().toUpperCase();
+  if (room.length < 4) { $('err').textContent = 'Oda kodu en az 4 karakter olmalı.'; return; }
+  try { localStorage.setItem('sn', me); } catch (e) {}
+  connect();
+};
+
+function connect() {
+  ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host);
+  ws.onopen = () => send({ t: 'join', room, name: me, role: 'app' });
+  ws.onmessage = (e) => handle(JSON.parse(e.data));
+  ws.onclose = () => { if (!$('room').classList.contains('hidden')) { sys('Bağlantı koptu, yeniden bağlanıyor…'); setTimeout(connect, 2000); } };
+}
+const send = (o) => ws && ws.readyState === 1 && ws.send(JSON.stringify(o));
+setInterval(() => send({ t: 'ping' }), 25000);
+
+function handle(m) {
+  switch (m.t) {
+    case 'full': ws.onclose = null; $('err').textContent = 'Bu salon dolu (en fazla 2 kişi).'; break;
+    case 'joined':
+      polite = m.peers > 0;
+      $('lobby').classList.add('hidden'); $('room').classList.remove('hidden');
+      $('rc').textContent = 'Oda ' + m.room;
+      setPeer(m.peers > 0);
+      $('bm').textContent = `javascript:(function(){var s=document.createElement('script');s.src='${location.origin}/b.js?room=${room}';document.body.appendChild(s)})()`;
+      sys(m.peers > 0 ? 'Salona girdin, eşin içeride.' : 'Salona girdin. Eşin bu kodla girince başlayabilirsiniz.');
+      break;
+    case 'peer-join': setPeer(true, m.name); sys(m.name + ' salona girdi.');
+      if (vid && yt) send({ t: 'vid', a: 'load', id: vid, time: ytTime(), playing: yt.getPlayerState() === 1 });
+      break;
+    case 'peer-leave': setPeer(false); sys(m.name + ' ayrıldı.'); break;
+    case 'chat': addMsg(m.from, m.txt, false); break;
+    case 'say': sys(m.txt); break;
+    case 'count': countdown(); break;
+    case 'vid': remoteVid(m); break;
+    case 'sig': onSig(m); break;
+  }
+}
+function setPeer(on, n) { $('dot').classList.toggle('on', on); $('peer').textContent = on ? (n || 'Eşin') + ' burada' : 'Eşin bekleniyor'; }
+
+/* ---------- chat ---------- */
+function addMsg(who, txt, mine) {
+  const d = document.createElement('div'); d.className = 'msg' + (mine ? ' me' : '');
+  d.textContent = mine ? txt : who + ': ' + txt;
+  $('log').appendChild(d); $('log').scrollTop = 1e9;
+}
+function sys(t) { const d = document.createElement('div'); d.className = 'msg sys'; d.textContent = t; $('log').appendChild(d); $('log').scrollTop = 1e9; }
+function sendChat() { const t = $('msg').value.trim(); if (!t) return; send({ t: 'chat', txt: t }); addMsg(me, t, true); $('msg').value = ''; }
+$('sendb').onclick = sendChat;
+$('msg').onkeydown = (e) => { if (e.key === 'Enter') sendChat(); };
+
+/* ---------- YouTube senkronu ---------- */
+window.onYouTubeIframeAPIReady = () => { ytReady = true; if (pending) { const p = pending; pending = null; loadVideo(p.id, p.time, p.playing); } };
+const parseId = (u) => { const m = u.match(/(?:youtu\.be\/|v=|embed\/|shorts\/|live\/)([\w-]{11})/); return m ? m[1] : (/^[\w-]{11}$/.test(u) ? u : null); };
+const ytTime = () => (yt && yt.getCurrentTime ? yt.getCurrentTime() : 0);
+
+function loadVideo(id, time = 0, playing = true) {
+  if (!ytReady) { pending = { id, time, playing }; return; }
+  vid = id; $('empty').classList.add('hidden'); lock = Date.now() + 1500;
+  if (yt) { yt.loadVideoById(id, time); if (!playing) setTimeout(() => yt.pauseVideo(), 400); return; }
+  yt = new YT.Player('player', {
+    videoId: id, playerVars: { playsinline: 1, rel: 0, start: Math.floor(time), autoplay: playing ? 1 : 0 },
+    events: { onStateChange: onState, onError: () => sys('Bu video başka uygulamada oynatılamıyor. Başka bir video seç.') }
+  });
+}
+$('load').onclick = () => {
+  const id = parseId($('url').value.trim());
+  if (!id) { sys('Geçerli bir YouTube linki değil.'); return; }
+  loadVideo(id, 0, true); send({ t: 'vid', a: 'load', id, time: 0, playing: true }); $('url').value = '';
+};
+function onState(e) {
+  if (Date.now() < lock) return;
+  if (e.data === 1) send({ t: 'vid', a: 'play', time: ytTime() });
+  if (e.data === 2) send({ t: 'vid', a: 'pause', time: ytTime() });
+}
+function remoteVid(m) {
+  if (m.a === 'load') return loadVideo(m.id, m.time, m.playing);
+  if (!yt || !yt.seekTo) return;
+  lock = Date.now() + 900;
+  if (Math.abs(ytTime() - m.time) > 1.2) yt.seekTo(m.time, true);
+  if (m.a === 'play') yt.playVideo(); else if (m.a === 'pause') yt.pauseVideo();
+}
+setInterval(() => { // ileri/geri sarma yakalama
+  if (!yt || !yt.getPlayerState || Date.now() < lock) return;
+  const t = ytTime();
+  if (yt.getPlayerState() === 1 && Math.abs(t - lastT - 1) > 2) send({ t: 'vid', a: 'play', time: t });
+  lastT = t;
+}, 1000);
+
+/* ---------- yarı otomatik araçlar ---------- */
+function countdown() {
+  const el = $('count'); let n = 3; el.classList.remove('hidden');
+  const tick = () => {
+    if (n === 0) { $('cn').textContent = 'Başla'; setTimeout(() => el.classList.add('hidden'), 900); return; }
+    $('cn').textContent = n; $('cn').style.animation = 'none'; void $('cn').offsetWidth; $('cn').style.animation = ''; n--; setTimeout(tick, 1000);
+  };
+  tick();
+}
+$('cd').onclick = () => { send({ t: 'count' }); countdown(); };
+$('halt').onclick = () => { send({ t: 'say', txt: me + ' filmi durdurdu.' }); sys('Durdurduğunu haber verdin.'); };
+$('mins').onclick = () => {
+  const t = prompt('Film şu an kaçıncı dakikada? (örnek 54:20)'); if (!t) return;
+  send({ t: 'say', txt: me + ' şu an ' + t + ' civarında.' }); sys('Dakikanı gönderdin: ' + t);
+};
+$('cpbm').onclick = () => { navigator.clipboard && navigator.clipboard.writeText($('bm').textContent).then(() => sys('Yer imi satırı kopyalandı.')); };
+
+/* ---------- mikrofon (WebRTC) ---------- */
+let pc = null, stream = null, making = false, ignore = false;
+function mkpc() {
+  pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+  pc.onicecandidate = (e) => e.candidate && send({ t: 'sig', c: e.candidate });
+  pc.ontrack = (e) => { $('remote').srcObject = e.streams[0]; $('remote').play().catch(() => {}); };
+  pc.onnegotiationneeded = async () => {
+    try { making = true; await pc.setLocalDescription(); send({ t: 'sig', d: pc.localDescription }); }
+    finally { making = false; }
+  };
+}
+async function onSig(m) {
+  if (!pc) mkpc();
+  try {
+    if (m.d) {
+      ignore = !polite && m.d.type === 'offer' && (making || pc.signalingState !== 'stable');
+      if (ignore) return;
+      await pc.setRemoteDescription(m.d);
+      if (m.d.type === 'offer') { await pc.setLocalDescription(); send({ t: 'sig', d: pc.localDescription }); }
+    } else if (m.c) { try { await pc.addIceCandidate(m.c); } catch (e) { if (!ignore) throw e; } }
+  } catch (e) { console.error(e); }
+}
+$('mic').onclick = async () => {
+  if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; if (pc) { pc.close(); pc = null; } $('mic').textContent = 'Mikrofonu aç'; $('mic').classList.remove('live'); return; }
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+  } catch (e) { sys('Mikrofon açılamadı. Safari ayarlarından bu siteye mikrofon izni ver.'); return; }
+  if (!pc) mkpc();
+  stream.getTracks().forEach((t) => pc.addTrack(t, stream));
+  $('mic').textContent = 'Mikrofonu kapat'; $('mic').classList.add('live');
+};
+</script>
+</body>
+</html>

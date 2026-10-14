@@ -6,26 +6,24 @@
   <style>
     body { font-family: sans-serif; background: #121212; color: white; padding: 20px; }
     #playerFrame { width: 100%; height: 600px; border: 2px solid #333; margin-top: 10px; }
-    input { padding: 10px; width: 60%; }
-    button { padding: 10px 15px; cursor: pointer; }
-    .result-item { background: #222; padding: 10px; margin: 5px 0; border-radius: 4px; cursor: pointer; }
+    input { padding: 10px; width: 60%; background: #222; color: #fff; border: 1px solid #444; }
+    button { padding: 10px 15px; cursor: pointer; background: #e50914; color: white; border: none; }
+    .result-item { background: #222; padding: 10px; margin: 5px 0; border-radius: 4px; cursor: pointer; border-left: 3px solid #e50914; }
+    .result-item:hover { background: #333; }
   </style>
 </head>
 <body>
 
-  <h2>Ortak Film & Arama Odası</h2>
+  <h2>Sinema Odası</h2>
 
-  <!-- URL Yapıştırma veya Arama Kutusu -->
   <div>
-    <input type="text" id="searchInput" placeholder="Film adı ara veya direkt site URL'si yapıştır...">
+    <input type="text" id="searchInput" placeholder="Film adı ara veya YouTube / Web URL'si yapıştır...">
     <button onclick="filmAraVeyaAc()">Aç / Ara</button>
   </div>
 
-  <!-- Arama Sonuçlarının Listeleneceği Alan -->
   <div id="searchResults"></div>
 
-  <!-- Filmin / Sitenin Açılacağı Ekran -->
-  <iframe id="playerFrame" src="about:blank"></iframe>
+  <iframe id="playerFrame" src="about:blank" allowfullscreen></iframe>
 
   <script src="b.js"></script>
 </body>

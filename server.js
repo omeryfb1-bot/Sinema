@@ -76,6 +76,7 @@ wss.on('connection', (ws) => {
   ws.on('message', (raw) => {
     let m; try { m = JSON.parse(raw); } catch { return; }
     if (m.t === 'ping') return;
+
     if (m.t === 'join') {
       const code = String(m.room || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
       if (!code) return;
@@ -91,10 +92,17 @@ wss.on('connection', (ws) => {
       relay(ws, { t: 'peer-join', name: ws.name });
       return;
     }
+
     if (!ws.room) return;
+
+    // Google Arama veya Web Sayfası Senkronizasyonu Tipi
+    // m.t === 'google-search' (Birisi arama yaptığında arama terimini iletir)
+    // m.t === 'open-web' (Birisi çıkan sonuçtan bir siteye tıkladığında web linkini iletir)
+
     m.from = ws.name;
     relay(ws, m);
   });
+
   ws.on('close', () => {
     if (!ws.room) return;
     const r = rooms.get(ws.room);
